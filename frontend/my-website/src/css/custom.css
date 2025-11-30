@@ -1,0 +1,480 @@
+/**
+ * Physical AI & Humanoid Robotics Textbook
+ * Custom Purple/Neon Theme
+ *
+ * Constitution Principle I: User Experience First
+ * - Purple + Neon theme applied consistently
+ * - Mobile-first responsive design
+ * - WCAG 2.1 AA accessibility compliance
+ */
+
+/* Purple/Neon Theme Variables */
+:root {
+  /* Primary Purple Palette */
+  --ifm-color-primary: #9333ea;
+  --ifm-color-primary-dark: #7e22ce;
+  --ifm-color-primary-darker: #6b21a8;
+  --ifm-color-primary-darkest: #581c87;
+  --ifm-color-primary-light: #a855f7;
+  --ifm-color-primary-lighter: #c084fc;
+  --ifm-color-primary-lightest: #d8b4fe;
+
+  /* Neon Accent Colors */
+  --neon-purple: #a855f7;
+  --neon-pink: #ec4899;
+  --neon-cyan: #06b6d4;
+  --neon-green: #10b981;
+
+  /* Typography */
+  --ifm-code-font-size: 95%;
+  --ifm-heading-font-weight: 700;
+  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Code Highlighting */
+  --docusaurus-highlighted-code-line-bg: rgba(147, 51, 234, 0.1);
+
+  /* Background */
+  --ifm-background-color: #ffffff;
+  --ifm-navbar-background-color: #ffffff;
+
+  /* Global Layout Variables */
+  --ifm-container-width-xl: 1280px;
+  --ifm-spacing-horizontal: 1rem;
+}
+
+/* Dark Mode - Purple/Neon Theme */
+[data-theme='dark'] {
+  /* Primary Purple Palette (Brighter for dark mode) */
+  --ifm-color-primary: #a855f7;
+  --ifm-color-primary-dark: #9333ea;
+  --ifm-color-primary-darker: #7e22ce;
+  --ifm-color-primary-darkest: #6b21a8;
+  --ifm-color-primary-light: #c084fc;
+  --ifm-color-primary-lighter: #d8b4fe;
+  --ifm-color-primary-lightest: #e9d5ff;
+
+  /* Dark Mode Backgrounds */
+  --ifm-background-color: #0f0f23;
+  --ifm-background-surface-color: #1a1a2e;
+  --ifm-navbar-background-color: #0f0f23;
+  --ifm-footer-background-color: #0a0a14;
+
+  /* Code Highlighting */
+  --docusaurus-highlighted-code-line-bg: rgba(168, 85, 247, 0.15);
+
+  /* Text Colors */
+  --ifm-font-color-base: #e5e5e5;
+  --ifm-heading-color: #f3f4f6;
+}
+
+/* Global Resets & Layout */
+html, body {
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  width: 100%;
+}
+
+/* Custom Utility Classes for Purple/Neon Theme */
+.highlight-purple {
+  color: var(--neon-purple);
+  font-weight: 600;
+}
+
+.neon-border {
+  border: 2px solid var(--neon-purple);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+  border-radius: 8px;
+  padding: 1rem;
+  color: var(--ifm-font-color-base);
+  background: rgba(147, 51, 234, 0.05); /* Slight background for contrast */
+}
+
+.code-accent {
+  border-left: 4px solid var(--neon-purple);
+  background: rgba(147, 51, 234, 0.05);
+}
+
+/* Buttons - Ensure text is visible */
+.button--primary {
+  color: #ffffff !important;
+  font-weight: bold;
+}
+
+.button--secondary {
+  background-color: transparent;
+  border: 2px solid var(--neon-purple);
+  color: var(--neon-purple) !important;
+}
+
+.button--secondary:hover {
+  background-color: var(--neon-purple);
+  color: #ffffff !important;
+}
+
+/* Navbar Enhancements */
+.navbar {
+  box-shadow: 0 2px 20px rgba(168, 85, 247, 0.1);
+}
+
+.navbar__logo img {
+  border-radius: 50%;
+  padding: 4px;
+  background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+}
+
+/* Hero Section Styling */
+.hero {
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+  border-bottom: 2px solid var(--neon-purple);
+}
+
+.hero__title {
+  background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Code Blocks */
+[data-theme='dark'] pre {
+  background: #1a1a2e;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+[data-theme='dark'] code {
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--neon-cyan);
+}
+
+/* Links with Neon Glow */
+a {
+  color: var(--neon-purple);
+  transition: all 0.3s ease;
+}
+
+a:hover {
+  color: var(--neon-pink);
+  text-shadow: 0 0 8px rgba(236, 72, 153, 0.5);
+}
+
+/* Tables */
+table {
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+th {
+  background: rgba(147, 51, 234, 0.1) !important;
+  color: var(--neon-purple);
+}
+
+/* Admonitions */
+.admonition {
+  border-left: 4px solid var(--neon-purple);
+}
+
+.admonition-tip {
+  border-left-color: var(--neon-green);
+}
+
+.admonition-warning {
+  border-left-color: var(--neon-pink);
+}
+
+.admonition-danger {
+  border-left-color: #ef4444;
+}
+
+.container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 1rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 997px) {
+  .container {
+    max-width: var(--ifm-container-width-xl);
+    padding: 0 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar__logo img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .hero__title {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+  
+  .hero__subtitle {
+    font-size: 1.1rem;
+    padding: 0 0.5rem;
+  }
+  
+  .padding-vert--xl {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+  
+  /* Ensure images don't overflow */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Fix table overflow */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* ============================================
+   RTL (Right-to-Left) Support for Urdu
+   ============================================ */
+
+/* Global RTL Layout */
+html[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+}
+
+html[dir="rtl"] body {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Navbar RTL */
+html[dir="rtl"] .navbar__items {
+  flex-direction: row-reverse;
+}
+
+html[dir="rtl"] .navbar__item {
+  margin-left: 0;
+  margin-right: var(--ifm-navbar-item-padding-horizontal);
+}
+
+html[dir="rtl"] .navbar__logo {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+/* Sidebar RTL */
+html[dir="rtl"] .theme-doc-sidebar-container {
+  border-right: none;
+  border-left: 1px solid var(--ifm-toc-border-color);
+}
+
+html[dir="rtl"] .menu__list-item-collapsible {
+  text-align: right;
+}
+
+html[dir="rtl"] .menu__caret::before {
+  transform: rotate(90deg);
+}
+
+html[dir="rtl"] .menu__list-item-collapsible--active .menu__caret::before {
+  transform: rotate(180deg);
+}
+
+/* Breadcrumbs RTL */
+html[dir="rtl"] .breadcrumbs__item:not(:last-child)::after {
+  content: "/";
+  margin: 0 0.5rem;
+  transform: scaleX(-1);
+}
+
+/* Content RTL */
+html[dir="rtl"] .markdown {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] .markdown h1,
+html[dir="rtl"] .markdown h2,
+html[dir="rtl"] .markdown h3,
+html[dir="rtl"] .markdown h4,
+html[dir="rtl"] .markdown h5,
+html[dir="rtl"] .markdown h6 {
+  text-align: right;
+}
+
+html[dir="rtl"] .markdown p,
+html[dir="rtl"] .markdown li {
+  text-align: right;
+}
+
+/* Lists RTL */
+html[dir="rtl"] ul,
+html[dir="rtl"] ol {
+  padding-right: 2rem;
+  padding-left: 0;
+}
+
+html[dir="rtl"] .markdown ul,
+html[dir="rtl"] .markdown ol {
+  padding-right: 1.5rem;
+  padding-left: 0;
+}
+
+/* Admonitions RTL */
+html[dir="rtl"] .admonition {
+  border-left: none;
+  border-right: 4px solid var(--neon-purple);
+}
+
+html[dir="rtl"] .admonition-tip {
+  border-right-color: var(--neon-green);
+}
+
+html[dir="rtl"] .admonition-warning {
+  border-right-color: var(--neon-pink);
+}
+
+html[dir="rtl"] .admonition-danger {
+  border-right-color: #ef4444;
+}
+
+/* Code Blocks - Keep LTR for code */
+html[dir="rtl"] pre,
+html[dir="rtl"] code {
+  direction: ltr;
+  text-align: left;
+}
+
+html[dir="rtl"] .code-accent {
+  border-left: none;
+  border-right: 4px solid var(--neon-purple);
+}
+
+/* Buttons RTL */
+html[dir="rtl"] .button {
+  text-align: center;
+}
+
+/* Tables RTL */
+html[dir="rtl"] table {
+  direction: rtl;
+}
+
+html[dir="rtl"] th,
+html[dir="rtl"] td {
+  text-align: right;
+}
+
+/* Footer RTL */
+html[dir="rtl"] .footer {
+  text-align: right;
+}
+
+html[dir="rtl"] .footer__links {
+  text-align: right;
+}
+
+/* TOC (Table of Contents) RTL */
+html[dir="rtl"] .table-of-contents {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] .table-of-contents__link {
+  text-align: right;
+  padding-left: 0;
+  padding-right: 0.5rem;
+}
+
+/* Pagination RTL */
+html[dir="rtl"] .pagination-nav__item--prev,
+html[dir="rtl"] .pagination-nav__item--next {
+  text-align: right;
+}
+
+html[dir="rtl"] .pagination-nav__item--prev .pagination-nav__label::before {
+  content: "→";
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+html[dir="rtl"] .pagination-nav__item--next .pagination-nav__label::after {
+  content: "←";
+  margin-right: 0.5rem;
+  margin-left: 0;
+}
+
+/* Search RTL */
+html[dir="rtl"] .navbar__search-input {
+  text-align: right;
+  padding-right: 2.5rem;
+  padding-left: 1rem;
+}
+
+/* Tabs RTL */
+html[dir="rtl"] .tabs {
+  text-align: right;
+}
+
+html[dir="rtl"] .tabs__item {
+  text-align: center;
+}
+
+/* Dropdown RTL */
+html[dir="rtl"] .dropdown__menu {
+  right: auto;
+  left: 0;
+  text-align: right;
+}
+
+/* Mobile Menu RTL */
+html[dir="rtl"] .navbar-sidebar {
+  right: auto;
+  left: 0;
+}
+
+html[dir="rtl"] .navbar-sidebar__back {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Ensure Urdu font rendering */
+html[dir="rtl"] {
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', 'Nafees Web Naskh', Arial, sans-serif;
+}
+
+/* Fix any floating elements */
+html[dir="rtl"] .float-left {
+  float: right;
+}
+
+html[dir="rtl"] .float-right {
+  float: left;
+}
+
+/* Margin/Padding flips */
+html[dir="rtl"] .margin-left--sm {
+  margin-left: 0;
+  margin-right: var(--ifm-spacing-horizontal);
+}
+
+html[dir="rtl"] .margin-right--sm {
+  margin-right: 0;
+  margin-left: var(--ifm-spacing-horizontal);
+}
+
+/* Preserve LTR for technical content */
+html[dir="rtl"] .preserve-ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Icons that should flip */
+html[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Icons that should NOT flip */
+html[dir="rtl"] .rtl-no-flip {
+  transform: none;
+}

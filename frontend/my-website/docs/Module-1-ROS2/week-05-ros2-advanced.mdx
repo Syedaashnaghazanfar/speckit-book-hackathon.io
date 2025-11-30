@@ -1,0 +1,631 @@
+---
+sidebar_position: 5
+title: "Week 5: ROS 2 Advanced Patterns"
+description: "Master actions, parameters, launch files, and transforms (tf2) to build production-ready robotic systems."
+---
+
+# Week 5: ROS 2 Advanced Patterns
+
+## Introduction
+
+You now understand the basics of ROS 2: nodes, topics, and services. This week, we level up with advanced patterns that professional roboticists use daily: **actions** for long-running tasks with feedback, **parameters** for runtime configuration, **launch files** for managing complex node systems, and **tf2** for coordinate frame transforms.
+
+These patterns separate prototypes from production-ready systems. Actions enable responsive user interfaces by providing progress feedback during long operations. Parameters allow tuning behavior without recompiling code. Launch files automate the startup of dozens of nodes with a single command. And tf2 is the secret sauce that makes sensor fusion and manipulation possible by managing spatial relationships between robot parts and the world.
+
+## Learning Objectives
+
+By the end of this week, you will be able to:
+
+- **Implement** action servers and clients for long-running tasks with preemption and feedback
+- **Configure** nodes using parameters loaded from YAML files
+- **Create** launch files to start multiple nodes with complex configurations
+- **Use** tf2 to manage coordinate frame transforms for sensor fusion
+- **Apply** best practices for production-ready ROS 2 systems
+
+## Actions: Long-Running Tasks with Feedback
+
+### Why Actions?
+
+Imagine asking a robot to navigate to a goal 50 meters away. This takes 30-60 seconds. With a service:
+- Client blocks for the entire duration (no UI updates)
+- Can't cancel mid-execution
+- No progress updates
+
+<span className="highlight-purple">**Actions**</span> solve this with:
+- **Asynchronous execution**: Client doesn't block
+- **Feedback**: Regular progress updates (e.g., "80% to goal")
+- **Preemption**: Can cancel or replace goals mid-execution
+- **Result**: Final outcome when task completes
+
+```mermaid
+sequenceDiagram
+    participant C as Action Client
+    participant S as Action Server
+    participant R as Robot
+
+    C->>S: Send Goal (target_pose)
+    S->>C: Goal Accepted
+
+    loop Navigation in progress
+        S->>R: Send motor commands
+        R->>S: Current state
+        S->>C: Feedback (80% complete)
+    end
+
+    Note over C: User can cancel<br/>at any time
+
+    S->>C: Result (success=true)
+
+    style S fill:#a855f7,stroke:#9333ea,stroke-width:2px,color:#fff
+    style C fill:#ec4899,stroke:#db2777,stroke-width:2px,color:#fff
+```
+
+**Diagram:** Actions provide asynchronous long-running tasks with continuous feedback and the ability to cancel mid-execution.
+
+### Action Structure
+
+An action definition (`.action` file) has three parts:
+
+```
+# NavigateToGoal.action
+
+# GOAL: What the client wants
+geometry_msgs/PoseStamped target_pose
+---
+# RESULT: Final outcome (sent once when done)
+bool success
+float32 total_distance_traveled
+---
+# FEEDBACK: Progress updates (sent multiple times)
+geometry_msgs/PoseStamped current_pose
+float32 distance_remaining
+float32 percent_complete
+```
+
+### Code Example: Action Server
+
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.action import ActionServer
+from rclpy.node import Node
+from my_robot_pkg.action import NavigateToGoal
+import time
+
+
+class NavigationActionServer(Node):
+    def __init__(self):
+        super().__init__('navigation_action_server')
+
+        self._action_server = ActionServer(
+            self,
+            NavigateToGoal,
+            '/navigate_to_goal',
+            self.execute_callback
+        )
+
+        self.get_logger().info('Navigation Action Server is ready')
+
+    def execute_callback(self, goal_handle):
+        """Execute the navigation task"""
+        self.get_logger().info('Executing goal...')
+
+        # Get the goal
+        target_pose = goal_handle.request.target_pose
+
+        # Simulate navigation with feedback
+        feedback_msg = NavigateToGoal.Feedback()
+        total_distance = 10.0  # meters (simulated)
+
+        for i in range(10):
+            # Check if goal was canceled
+            if goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+                self.get_logger().info('Goal canceled')
+                return NavigateToGoal.Result()
+
+            # Simulate progress
+            feedback_msg.distance_remaining = total_distance * (1.0 - i / 10.0)
+            feedback_msg.percent_complete = (i + 1) * 10.0
+
+            # Publish feedback
+            goal_handle.publish_feedback(feedback_msg)
+            self.get_logger().info(f'Progress: {feedback_msg.percent_complete:.0f}%')
+
+            time.sleep(1.0)  # Simulate work
+
+        # Mark goal as succeeded
+        goal_handle.succeed()
+
+        # Return result
+        result = NavigateToGoal.Result()
+        result.success = True
+        result.total_distance_traveled = total_distance
+
+        self.get_logger().info('Goal succeeded!')
+        return result
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    server = NavigationActionServer()
+    rclpy.spin(server)
+    server.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+### Code Example: Action Client
+
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.action import ActionClient
+from rclpy.node import Node
+from my_robot_pkg.action import NavigateToGoal
+from geometry_msgs.msg import PoseStamped
+
+
+class NavigationActionClient(Node):
+    def __init__(self):
+        super().__init__('navigation_action_client')
+
+        self._action_client = ActionClient(
+            self,
+            NavigateToGoal,
+            '/navigate_to_goal'
+        )
+
+    def send_goal(self, x, y):
+        """Send a navigation goal"""
+        goal_msg = NavigateToGoal.Goal()
+
+        # Create target pose
+        goal_msg.target_pose = PoseStamped()
+        goal_msg.target_pose.pose.position.x = x
+        goal_msg.target_pose.pose.position.y = y
+
+        self.get_logger().info('Waiting for action server...')
+        self._action_client.wait_for_server()
+
+        self.get_logger().info(f'Sending goal: ({x}, {y})')
+        self._send_goal_future = self._action_client.send_goal_async(
+            goal_msg,
+            feedback_callback=self.feedback_callback
+        )
+
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
+
+    def goal_response_callback(self, future):
+        """Called when server accepts or rejects goal"""
+        goal_handle = future.result()
+
+        if not goal_handle.accepted:
+            self.get_logger().info('Goal rejected')
+            return
+
+        self.get_logger().info('Goal accepted')
+        self._get_result_future = goal_handle.get_result_async()
+        self._get_result_future.add_done_callback(self.get_result_callback)
+
+    def feedback_callback(self, feedback_msg):
+        """Called when feedback is received"""
+        feedback = feedback_msg.feedback
+        self.get_logger().info(
+            f'Progress: {feedback.percent_complete:.0f}% | '
+            f'Remaining: {feedback.distance_remaining:.1f}m'
+        )
+
+    def get_result_callback(self, future):
+        """Called when action completes"""
+        result = future.result().result
+        self.get_logger().info(f'Result: Success={result.success}, Distance={result.total_distance_traveled:.1f}m')
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    client = NavigationActionClient()
+    client.send_goal(10.0, 5.0)
+    rclpy.spin(client)
+    client.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+:::tip
+Actions are perfect for tasks like navigation, manipulation (pick-and-place), battery charging, and map building—anything that takes more than a few seconds and benefits from progress feedback or cancellation.
+:::
+
+## Parameters: Runtime Configuration
+
+### Why Parameters?
+
+Hardcoding values is inflexible. <span className="highlight-purple">**Parameters**</span> allow runtime configuration:
+
+```python
+# Bad: Hardcoded
+self.max_speed = 2.0  # Requires recompiling to change
+
+# Good: Parameter
+self.declare_parameter('max_speed', 2.0)  # Can change via command line or file
+```
+
+### Declaring and Using Parameters
+
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+
+
+class ParameterizedNode(Node):
+    def __init__(self):
+        super().__init__('parameterized_node')
+
+        # Declare parameters with default values
+        self.declare_parameter('max_speed', 2.0)
+        self.declare_parameter('robot_name', 'robot_1')
+        self.declare_parameter('enable_safety', True)
+
+        # Get parameter values
+        self.max_speed = self.get_parameter('max_speed').value
+        self.robot_name = self.get_parameter('robot_name').value
+        self.enable_safety = self.get_parameter('enable_safety').value
+
+        self.get_logger().info(f'Robot: {self.robot_name}')
+        self.get_logger().info(f'Max Speed: {self.max_speed} m/s')
+        self.get_logger().info(f'Safety Enabled: {self.enable_safety}')
+
+        # Set up a timer to demonstrate parameter updates
+        self.create_timer(1.0, self.timer_callback)
+
+    def timer_callback(self):
+        # Re-read parameter (supports dynamic reconfiguration)
+        current_speed = self.get_parameter('max_speed').value
+        if current_speed != self.max_speed:
+            self.get_logger().info(f'Speed changed: {self.max_speed} -> {current_speed}')
+            self.max_speed = current_speed
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = ParameterizedNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+### Setting Parameters from Command Line
+
+```bash
+# Set parameters when launching
+ros2 run my_robot_pkg parameterized_node --ros-args \
+  -p max_speed:=3.5 \
+  -p robot_name:=robot_alpha \
+  -p enable_safety:=false
+
+# Change parameter at runtime
+ros2 param set /parameterized_node max_speed 1.5
+
+# Get current parameter value
+ros2 param get /parameterized_node max_speed
+
+# List all parameters
+ros2 param list
+```
+
+### Loading Parameters from YAML
+
+Create `config/robot_params.yaml`:
+
+```yaml
+parameterized_node:
+  ros__parameters:
+    max_speed: 2.5
+    robot_name: "robot_beta"
+    enable_safety: true
+```
+
+Load when launching:
+
+```bash
+ros2 run my_robot_pkg parameterized_node --ros-args \
+  --params-file ~/ros2_ws/src/my_robot_pkg/config/robot_params.yaml
+```
+
+## Launch Files: Orchestrating Complex Systems
+
+### Why Launch Files?
+
+Starting 10+ nodes manually is tedious and error-prone. <span className="highlight-purple">**Launch files**</span> automate node startup, parameter loading, and remapping.
+
+### Python Launch File
+
+Create `launch/robot_system.launch.py`:
+
+```python
+from launch import LaunchDescription
+from launch_ros.actions import Node
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.substitutions import LaunchConfiguration
+import os
+from ament_index_python.packages import get_package_share_directory
+
+
+def generate_launch_description():
+    # Get package directory
+    pkg_dir = get_package_share_directory('my_robot_pkg')
+
+    # Declare launch arguments
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+
+    # Parameter file path
+    config_file = os.path.join(pkg_dir, 'config', 'robot_params.yaml')
+
+    return LaunchDescription([
+        # Declare arguments
+        DeclareLaunchArgument(
+            'use_sim_time',
+            default_value='false',
+            description='Use simulation time'
+        ),
+
+        # Launch camera driver
+        Node(
+            package='realsense2_camera',
+            executable='realsense2_camera_node',
+            name='camera',
+            namespace='sensors',
+            parameters=[{'use_sim_time': use_sim_time}],
+            output='screen'
+        ),
+
+        # Launch object detector
+        Node(
+            package='my_robot_pkg',
+            executable='object_detector_node',
+            name='detector',
+            parameters=[config_file],
+            remappings=[
+                ('/image', '/sensors/camera/color/image_raw'),
+            ],
+            output='screen'
+        ),
+
+        # Launch robot controller
+        Node(
+            package='my_robot_pkg',
+            executable='robot_controller',
+            name='controller',
+            parameters=[config_file],
+            output='screen'
+        ),
+
+        # Launch RViz for visualization
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            arguments=['-d', os.path.join(pkg_dir, 'rviz', 'robot.rviz')],
+            output='screen'
+        ),
+    ])
+```
+
+### Running Launch Files
+
+```bash
+# Run the launch file
+ros2 launch my_robot_pkg robot_system.launch.py
+
+# Pass arguments
+ros2 launch my_robot_pkg robot_system.launch.py use_sim_time:=true
+```
+
+:::warning
+Launch files must be installed properly. Add to `setup.py`:
+
+```python
+import os
+from glob import glob
+
+data_files=[
+    # ... existing entries ...
+    (os.path.join('share', package_name, 'launch'),
+        glob('launch/*.launch.py')),
+    (os.path.join('share', package_name, 'config'),
+        glob('config/*.yaml')),
+],
+```
+:::
+
+## Transforms (tf2): Managing Coordinate Frames
+
+### Why tf2?
+
+Robots have multiple coordinate frames:
+
+- `base_link`: Robot's center
+- `camera_link`: Camera position
+- `lidar_link`: LIDAR position
+- `map`: Fixed world frame
+
+<span className="highlight-purple">**tf2**</span> manages transforms between these frames, enabling:
+
+- "What is the obstacle's position relative to the robot base?"
+- "Transform camera image coordinates to robot coordinates"
+- "Where is the robot in the map?"
+
+### Publishing a Static Transform
+
+```python
+#!/usr/bin/env python3
+
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import TransformStamped
+from tf2_ros import StaticTransformBroadcaster
+
+
+class StaticTFPublisher(Node):
+    def __init__(self):
+        super().__init__('static_tf_publisher')
+
+        self.tf_broadcaster = StaticTransformBroadcaster(self)
+
+        # Publish transform from base_link to camera_link
+        t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = 'base_link'
+        t.child_frame_id = 'camera_link'
+
+        # Camera is 0.2m forward, 0.1m up from base
+        t.transform.translation.x = 0.2
+        t.transform.translation.y = 0.0
+        t.transform.translation.z = 0.1
+
+        # No rotation (quaternion identity)
+        t.transform.rotation.x = 0.0
+        t.transform.rotation.y = 0.0
+        t.transform.rotation.z = 0.0
+        t.transform.rotation.w = 1.0
+
+        self.tf_broadcaster.sendTransform(t)
+
+        self.get_logger().info('Published static transform base_link -> camera_link')
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = StaticTFPublisher()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+### Querying Transforms
+
+```python
+from tf2_ros import Buffer, TransformListener
+from rclpy.duration import Duration
+
+class TransformUser(Node):
+    def __init__(self):
+        super().__init__('transform_user')
+
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
+        self.create_timer(1.0, self.query_transform)
+
+    def query_transform(self):
+        try:
+            # Lookup transform from camera_link to base_link
+            transform = self.tf_buffer.lookup_transform(
+                'base_link',
+                'camera_link',
+                rclpy.time.Time(),
+                timeout=Duration(seconds=1.0)
+            )
+
+            self.get_logger().info(
+                f'Transform: x={transform.transform.translation.x:.2f}, '
+                f'y={transform.transform.translation.y:.2f}, '
+                f'z={transform.transform.translation.z:.2f}'
+            )
+
+        except Exception as e:
+            self.get_logger().warn(f'Could not get transform: {e}')
+```
+
+### Visualizing Transforms in RViz
+
+```bash
+# Run your node(s) publishing transforms
+ros2 run my_robot_pkg static_tf_publisher
+
+# Launch RViz
+rviz2
+
+# In RViz:
+# 1. Add -> TF display
+# 2. Set Fixed Frame to "base_link"
+# 3. See coordinate frames visualized as axes
+```
+
+## Best Practices for Production Systems
+
+1. **Use namespaces** to avoid topic name collisions when running multiple robots
+2. **Load parameters from YAML** instead of hardcoding
+3. **Use launch files** even for single nodes (makes future expansion easier)
+4. **Publish static transforms** for fixed sensors
+5. **Use consistent frame IDs** (`base_link`, `odom`, `map` are conventions)
+6. **Log appropriately**: INFO for important events, DEBUG for frequent data
+7. **Handle exceptions** gracefully (e.g., transform timeouts)
+
+## Self-Assessment Questions
+
+1. **When would you use an action instead of a service?**
+   <details>
+   <summary>Answer</summary>
+   Use an action when the task takes more than a few seconds and you need: (1) progress feedback to update a UI or monitor progress, (2) the ability to cancel/preempt the task mid-execution, or (3) asynchronous execution so the client can perform other work while waiting. Examples: navigation to a distant goal, picking and placing an object, charging a battery, or building a map. Services are better for quick, synchronous requests like querying current state.
+   </details>
+
+2. **How do parameters differ from topics in terms of data update frequency and use case?**
+   <details>
+   <summary>Answer</summary>
+   Parameters are for infrequent configuration data that changes rarely (e.g., max speed, PID gains, sensor calibration). They're typically set at startup or adjusted occasionally during runtime. Topics are for continuous streaming data that changes frequently (e.g., sensor readings, velocity commands, robot pose). Parameters use a get/set API, while topics use publish/subscribe messaging.
+   </details>
+
+3. **What is the purpose of the `tf_buffer` in tf2, and why does it need a listener?**
+   <details>
+   <summary>Answer</summary>
+   The `tf_buffer` stores a time-indexed history of transforms between coordinate frames (typically 10 seconds of data). It needs a `TransformListener` to subscribe to the `/tf` and `/tf_static` topics where transform data is published. When you query a transform (e.g., "camera to base_link at time T"), the buffer looks up the stored transforms and computes the requested transformation, potentially interpolating between published values for precise timing.
+   </details>
+
+4. **Why is it better to use a launch file instead of manually starting nodes in separate terminals?**
+   <details>
+   <summary>Answer</summary>
+   Launch files provide: (1) **Automation**—start 10+ nodes with one command, (2) **Configuration**—load parameters from YAML files consistently, (3) **Remapping**—remap topic names to connect nodes without changing code, (4) **Repeatability**—ensure the same startup sequence every time, reducing human error, (5) **Documentation**—the launch file serves as documentation of system architecture, and (6) **CI/CD**—easily integrate into automated testing and deployment pipelines.
+   </details>
+
+5. **How would you transform a point detected by a camera into the robot's base frame?**
+   <details>
+   <summary>Answer</summary>
+   Use tf2 to lookup the transform from `camera_link` to `base_link`, then apply it to the point:<br/>
+   1. Get the point coordinates in `camera_link` (e.g., from object detection)<br/>
+   2. Create a `PointStamped` message with `frame_id = 'camera_link'`<br/>
+   3. Use `tf_buffer.transform()` to convert the point to `base_link` frame<br/>
+   4. The resulting point is now in robot-centric coordinates, suitable for navigation or manipulation planning<br/>
+   Example: `transformed_point = tf_buffer.transform(point_in_camera_frame, 'base_link')`
+   </details>
+
+## Summary
+
+This week, you mastered advanced ROS 2 patterns:
+
+- **Actions** enable long-running tasks with feedback, cancellation, and results
+- **Parameters** provide runtime configuration without recompilation
+- **Launch files** orchestrate complex multi-node systems
+- **tf2** manages coordinate frame transforms for sensor fusion and spatial reasoning
+
+## Next Steps
+
+In Week 6, we transition from ROS 2 fundamentals to **Robot Simulation with Gazebo**, where you'll create virtual robot models, define physics properties, and test algorithms safely before deploying to real hardware. You'll learn URDF modeling, sensor plugins, and integration with ROS 2.

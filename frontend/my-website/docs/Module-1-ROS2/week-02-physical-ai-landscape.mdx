@@ -1,0 +1,441 @@
+---
+sidebar_position: 2
+title: "Week 2: Physical AI Landscape"
+description: "Dive deep into the sensors, actuators, and humanoid robotics platforms that form the building blocks of Physical AI systems."
+---
+
+# Week 2: Physical AI Landscape
+
+## Introduction
+
+Now that you understand the fundamental concepts of Physical AI, it's time to explore the hardware and technologies that bring these systems to life. This week focuses on the **Physical AI technology stack**: the sensors that enable perception, the actuators that enable action, and the humanoid robotics platforms that integrate these components into functional robots.
+
+You'll gain hands-on knowledge of LIDAR sensors, RGB-D cameras, IMUs, and discover how these sensors complement each other to create robust perception systems. We'll also explore the booming humanoid robotics market, comparing platforms like Unitree G1, Boston Dynamics Atlas, and Tesla Optimus. By the end of this week, you'll understand the hardware landscape that powers the Physical AI revolution.
+
+## Learning Objectives
+
+By the end of this week, you will be able to:
+
+- **Identify** the major sensor modalities used in Physical AI systems (vision, LIDAR, IMU, proprioceptive)
+- **Explain** the strengths and limitations of different sensor types and when to use each
+- **Understand** how RGB-D cameras like Intel RealSense provide depth information for manipulation tasks
+- **Compare** leading humanoid robotics platforms based on hardware specifications and capabilities
+- **Recognize** the key components of a humanoid robot: perception system, locomotion, manipulation, and compute
+
+## Sensor Modalities in Physical AI
+
+### 1. Vision Sensors
+
+Vision is the richest sensory modality for understanding the world, providing color, texture, and semantic information.
+
+#### RGB Cameras
+
+Standard cameras capture red, green, and blue color channels. They're:
+
+- **Advantages**: High resolution, rich semantic information, widely available, inexpensive
+- **Disadvantages**: No depth information (monocular), sensitive to lighting conditions, affected by motion blur
+- **Use Cases**: Object recognition, visual tracking, semantic segmentation
+
+#### Stereo Cameras
+
+Two cameras spaced apart (like human eyes) can compute depth through triangulation:
+
+- **Advantages**: Passive depth sensing, works outdoors, provides RGB + depth
+- **Disadvantages**: Computationally intensive, struggles with textureless surfaces, limited range (~10m)
+- **Use Cases**: Outdoor navigation, obstacle avoidance
+
+#### RGB-D Cameras (Depth Cameras)
+
+<span className="highlight-purple">**RGB-D cameras**</span> combine color images with depth information. The three main technologies are:
+
+| Technology | How It Works | Range | Advantages | Disadvantages |
+|------------|--------------|-------|------------|---------------|
+| **Structured Light** (e.g., Intel RealSense D400 series) | Projects infrared pattern, measures distortion | 0.3-10m | High accuracy, good for indoor manipulation | Struggles outdoors (sunlight interferes) |
+| **Time-of-Flight (ToF)** | Measures light travel time | 0.1-5m | Fast, works on textureless surfaces | Lower resolution than structured light |
+| **Stereo + Infrared** | Stereo matching with active IR illumination | 0.2-10m | Robust in low light | Requires texture for stereo matching |
+
+**Intel RealSense D435** is a popular choice for robotics:
+
+- Resolution: 1920x1080 RGB, 1280x720 depth
+- Frame rate: Up to 90 FPS
+- Depth accuracy: &lt;2% at 2m
+- Field of view: 87° × 58° (depth), 69° × 42° (RGB)
+
+### Code Example: Reading Intel RealSense Data
+
+```python
+import pyrealsense2 as rs
+import numpy as np
+import cv2
+
+# Configure RealSense pipeline
+pipeline = rs.pipeline()
+config = rs.config()
+
+# Enable RGB and depth streams
+config.enable_stream(rs.stream.color, 1920, 1080, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+
+# Start streaming
+pipeline.start(config)
+
+try:
+    while True:
+        # Wait for a coherent pair of frames: depth and color
+        frames = pipeline.wait_for_frames()
+        depth_frame = frames.get_depth_frame()
+        color_frame = frames.get_color_frame()
+
+        if not depth_frame or not color_frame:
+            continue
+
+        # Convert images to numpy arrays
+        depth_image = np.asanyarray(depth_frame.get_data())
+        color_image = np.asanyarray(color_frame.get_data())
+
+        # Get depth at image center (distance in millimeters)
+        width = depth_frame.get_width()
+        height = depth_frame.get_height()
+        center_depth = depth_frame.get_distance(width // 2, height // 2)
+
+        print(f"Distance to center point: {center_depth:.2f} meters")
+
+        # Display images (color visualization of depth)
+        depth_colormap = cv2.applyColorMap(
+            cv2.convertScaleAbs(depth_image, alpha=0.03),
+            cv2.COLORMAP_JET
+        )
+
+        cv2.imshow('RGB Image', color_image)
+        cv2.imshow('Depth Image', depth_colormap)
+
+        # Exit on 'q' key
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+finally:
+    pipeline.stop()
+    cv2.destroyAllWindows()
+```
+
+:::tip
+When working with depth cameras indoors, ensure there's adequate infrared illumination if using structured light sensors. Avoid placing the sensor too close to reflective surfaces (glass, mirrors) which can cause artifacts.
+:::
+
+### 2. LIDAR (Light Detection and Ranging)
+
+<span className="highlight-purple">**LIDAR**</span> sensors emit laser pulses and measure the time it takes for reflections to return, creating a 3D point cloud of the environment.
+
+#### LIDAR Types
+
+1. **Mechanical Spinning LIDAR**: Rotating sensor head (e.g., Velodyne, Ouster)
+   - 360° horizontal field of view
+   - High point density
+   - Expensive ($1,000-$75,000+)
+   - Used in autonomous vehicles
+
+2. **Solid-State LIDAR**: No moving parts (e.g., Livox, solid-state chips)
+   - Lower cost
+   - More durable
+   - Limited field of view
+   - Emerging technology for robotics
+
+3. **2D LIDAR**: Single plane scanning (e.g., SICK, Hokuyo)
+   - Very fast (up to 100 Hz)
+   - Inexpensive ($100-$2,000)
+   - Perfect for indoor mobile robots
+   - Used for obstacle detection and mapping
+
+#### LIDAR Specifications
+
+Key parameters to evaluate:
+
+- **Range**: How far the sensor can detect (1m-300m depending on model)
+- **Angular Resolution**: Spacing between laser beams (0.1°-2°)
+- **Scan Rate**: How many scans per second (5-100 Hz)
+- **Points per Second**: Total data rate (10K-2M+ points/sec)
+- **Wavelength**: 905nm (common) or 1550nm (eye-safe at higher power)
+
+**Use Cases**:
+- Autonomous navigation (SLAM - Simultaneous Localization and Mapping)
+- Obstacle detection in GPS-denied environments
+- 3D reconstruction of environments
+- Long-range sensing (cameras limited to ~50m effectively)
+
+:::warning
+LIDAR works poorly on transparent surfaces (glass, water) and highly reflective materials (mirrors, polished metal). Combine with cameras for robust perception.
+:::
+
+### 3. Inertial Measurement Units (IMUs)
+
+An <span className="highlight-purple">**IMU**</span> combines accelerometers and gyroscopes to measure linear acceleration and angular velocity. High-end IMUs also include magnetometers for absolute orientation.
+
+#### IMU Components
+
+1. **Accelerometer**: Measures linear acceleration in 3 axes (X, Y, Z)
+   - Detects gravity (when stationary, reads ~9.81 m/s² downward)
+   - Measures movement acceleration
+   - Affected by noise and bias drift
+
+2. **Gyroscope**: Measures angular velocity (rotation rate) in 3 axes
+   - Essential for tracking orientation changes
+   - Subject to drift over time (needs periodic recalibration)
+
+3. **Magnetometer** (optional): Measures magnetic field direction
+   - Provides absolute orientation reference (like a compass)
+   - Affected by local magnetic interference (motors, metal structures)
+
+#### Why IMUs Matter for Robots
+
+- **Balance and Stability**: Humanoid robots use IMU data to detect falls and adjust posture
+- **Dead Reckoning**: Estimating position when GPS/vision is unavailable
+- **Sensor Fusion**: Combining with cameras/LIDAR for robust localization
+- **High Frequency**: IMUs typically run at 100-1000 Hz, much faster than cameras
+
+### Code Example: Reading IMU Data (ROS 2)
+
+```python
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import Imu
+import numpy as np
+
+class IMUListener(Node):
+    def __init__(self):
+        super().__init__('imu_listener')
+
+        # Subscribe to IMU topic
+        self.subscription = self.create_subscription(
+            Imu,
+            '/imu/data',
+            self.imu_callback,
+            10
+        )
+
+    def imu_callback(self, msg):
+        """Process incoming IMU data"""
+
+        # Extract orientation (quaternion)
+        orientation = msg.orientation
+        q = [orientation.x, orientation.y, orientation.z, orientation.w]
+
+        # Extract angular velocity (rad/s)
+        angular_vel = msg.angular_velocity
+        omega = [angular_vel.x, angular_vel.y, angular_vel.z]
+
+        # Extract linear acceleration (m/s^2)
+        linear_acc = msg.linear_acceleration
+        acc = [linear_acc.x, linear_acc.y, linear_acc.z]
+
+        # Calculate magnitude of acceleration (includes gravity)
+        acc_magnitude = np.linalg.norm(acc)
+
+        self.get_logger().info(
+            f'IMU Data | Accel: {acc_magnitude:.2f} m/s² | '
+            f'Gyro: ({omega[0]:.2f}, {omega[1]:.2f}, {omega[2]:.2f}) rad/s'
+        )
+
+def main(args=None):
+    rclpy.init(args=args)
+    imu_listener = IMUListener()
+    rclpy.spin(imu_listener)
+    imu_listener.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+```
+
+### 4. Proprioceptive Sensors
+
+While exteroceptive sensors (cameras, LIDAR) perceive the external world, <span className="highlight-purple">**proprioceptive sensors**</span> measure the robot's own state:
+
+- **Joint Encoders**: Measure joint angles (position) in robotic arms and legs
+- **Force/Torque Sensors**: Measure forces at contact points (essential for manipulation)
+- **Current Sensors**: Measure motor current (proxy for torque/load)
+
+These sensors enable:
+- Precise motion control (closed-loop control)
+- Collision detection (sudden torque changes)
+- Compliant interaction (adjusting force during contact)
+
+## Humanoid Robotics Platforms
+
+### Why Humanoid Robots?
+
+Humanoid robots—robots with human-like body plans—are designed to operate in human environments:
+
+- Navigate spaces built for humans (stairs, doorways, furniture)
+- Use tools designed for human hands
+- Interact naturally with people through gestures and expression
+- Leverage human motion data for learning (imitation learning)
+
+The past 5 years have seen explosive growth in humanoid robotics, driven by advances in:
+- **Actuator technology**: Powerful, efficient electric motors
+- **Battery technology**: Longer runtime with lithium-ion cells
+- **AI/ML**: Vision-language-action models for complex tasks
+- **Simulation**: Training in virtual environments before real-world deployment
+
+### Leading Humanoid Platforms
+
+#### Unitree G1 (2024)
+
+Unitree's latest humanoid robot, optimized for research and education:
+
+- **Height**: 130 cm
+- **Weight**: 35 kg
+- **Degrees of Freedom**: 23-43 (depending on configuration)
+- **Compute**: NVIDIA Jetson Orin (integrated)
+- **Sensors**:
+  - 3D LIDAR for mapping
+  - Depth cameras (stereo or RealSense)
+  - IMU for balance
+- **Locomotion**: Bipedal walking, stable on uneven terrain
+- **Manipulation**: 6-DoF arms with dexterous grippers
+- **Price**: ~$16,000 (base model, as of 2024)
+
+**Use Cases**: Research labs, university education, agile manipulation tasks
+
+#### Unitree Go2 (Quadruped - for comparison)
+
+While not humanoid, the Go2 quadruped shares the Unitree ecosystem:
+
+- **Locomotion**: Four-legged (more stable than bipedal)
+- **Speed**: Up to 5 m/s
+- **Use Cases**: Inspection, delivery, entertainment
+- **Price**: ~$2,700 (more affordable entry point)
+
+#### Boston Dynamics Atlas (Research Platform)
+
+The gold standard for humanoid agility:
+
+- **Height**: 150 cm
+- **Weight**: 89 kg
+- **Capabilities**:
+  - Backflips, parkour, dancing
+  - Advanced whole-body motion planning
+  - Hydraulic actuation (very powerful)
+- **Sensors**: LIDAR, stereo cameras, IMU array
+- **Limitations**: Not commercially available, primarily for research/demos
+
+#### Tesla Optimus (Development)
+
+Tesla's entry into humanoid robotics:
+
+- **Target Use Case**: Manufacturing and household tasks
+- **Design Philosophy**: Mass production at scale (automotive manufacturing techniques)
+- **Status (2024)**: Prototypes demonstrated, not yet commercially available
+- **Approach**: Vision-first (leveraging Tesla's self-driving AI)
+
+### Visual Aid: Humanoid Robot Comparison
+
+{/* TODO: Add image - Humanoid robot platform comparison chart */}
+{/* ![Humanoid Robot Comparison](./img/humanoid-comparison.png) */}
+{/* *Comparison table of key specifications: height, weight, DoF, sensors, compute, and price for Unitree G1, Boston Dynamics Atlas, and Tesla Optimus* */}
+
+## Compute Platforms for Physical AI
+
+Physical AI systems require significant onboard computation:
+
+### Edge AI Compute
+
+1. **NVIDIA Jetson Series**
+   - **Jetson Orin Nano**: 40 TOPS AI performance, 8GB RAM, $499
+   - **Jetson AGX Orin**: 275 TOPS, 64GB RAM, $1,999
+   - **Use Case**: Onboard inference for vision models, sensor fusion
+   - **Power**: 5-60W (critical for battery-powered robots)
+
+2. **Intel NUC / Edge Compute**
+   - More general-purpose, higher power consumption
+   - Suitable for stationary robots or those with large batteries
+
+### Workstation Hardware (Development)
+
+For developing and training models (not onboard the robot):
+
+- **GPU**: NVIDIA RTX 4070 Ti or higher (for Isaac Sim, model training)
+- **CPU**: Intel i7/i9 or AMD Ryzen 7/9
+- **RAM**: 32GB minimum (64GB preferred for simulation)
+- **Storage**: 1TB NVMe SSD (datasets and simulation environments are large)
+
+## The Physical AI Technology Stack (Summary)
+
+Bringing it all together, a modern humanoid robot integrates:
+
+```
+┌─────────────────────────────────────────────┐
+│         High-Level Planning & AI            │
+│  (Vision-Language Models, Task Planning)    │
+└─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│        Perception & Sensor Fusion           │
+│   (Camera, LIDAR, IMU data → World Model)   │
+└─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│        Localization & Mapping (SLAM)        │
+│    (Where am I? What does space look like?) │
+└─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│        Motion Planning & Control            │
+│   (How do I move to achieve my goal?)       │
+└─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│              Actuation Layer                │
+│         (Motor controllers, drivers)        │
+└─────────────────────────────────────────────┘
+```
+
+Each layer communicates via well-defined interfaces—this is where **ROS 2** (which we'll learn in Weeks 3-5) becomes essential as the middleware connecting these components.
+
+## Self-Assessment Questions
+
+1. **What are the three main technologies used in RGB-D cameras, and when would you choose structured light over Time-of-Flight?**
+   <details>
+   <summary>Answer</summary>
+   The three technologies are: (1) Structured Light (projects infrared patterns), (2) Time-of-Flight (measures light travel time), and (3) Stereo + Infrared. You would choose structured light (e.g., Intel RealSense D435) over ToF when you need higher depth accuracy and resolution for tasks like object manipulation in indoor environments. Structured light provides better precision at 1-3 meter ranges but struggles outdoors due to sunlight interference. ToF is better when you need faster frame rates or operation in varying lighting conditions, though it typically has lower resolution.
+   </details>
+
+2. **Why is LIDAR essential for autonomous navigation in GPS-denied environments?**
+   <details>
+   <summary>Answer</summary>
+   LIDAR provides accurate 3D distance measurements that work regardless of lighting conditions, enabling robots to build detailed maps of their surroundings and localize themselves within those maps (SLAM - Simultaneous Localization and Mapping). Unlike cameras, LIDAR gives direct metric distance information without requiring computationally intensive stereo matching. It also has longer range than depth cameras (up to 100+ meters) and provides 360° coverage with rotating LIDAR sensors, making it ideal for navigation when GPS is unavailable (indoors, underground, dense urban areas).
+   </details>
+
+3. **Explain the role of an IMU in a humanoid robot's balance control system.**
+   <details>
+   <summary>Answer</summary>
+   An IMU measures linear acceleration and angular velocity in real-time (typically at 100-1000 Hz), allowing the robot to detect orientation changes and acceleration instantly. For balance control, the IMU detects when the robot is tilting or falling by measuring unexpected accelerations and rotations. This high-frequency feedback enables the robot's control system to make rapid corrections—adjusting leg positions or torso orientation—before a fall occurs. The IMU data is fused with joint encoder readings to estimate the robot's center of mass position and predict instability.
+   </details>
+
+4. **Compare the trade-offs between bipedal humanoid robots (like Unitree G1) and quadruped robots (like Unitree Go2).**
+   <details>
+   <summary>Answer</summary>
+   **Bipedal (Humanoid) Advantages**: Can navigate human environments (stairs, narrow doorways), use human tools, reach higher, and interact more naturally with people. **Disadvantages**: Less stable (requires active balance control), slower, more complex control, higher power consumption.<br/><br/>
+   **Quadruped Advantages**: Inherently stable (statically stable when three legs are on ground), faster locomotion, simpler control, more robust to terrain variations. **Disadvantages**: Cannot navigate stairs easily, cannot use human tools designed for hands, limited reach.<br/><br/>
+   The choice depends on the task: quadrupeds for inspection/delivery in open spaces, humanoids for human-centric environments requiring manipulation.
+   </details>
+
+5. **Why is edge AI compute (like NVIDIA Jetson) preferred over cloud-based processing for robot perception?**
+   <details>
+   <summary>Answer</summary>
+   Edge AI compute on the robot eliminates network latency, which is critical for real-time perception and control. A robot moving at 1 m/s cannot wait 100-500ms for cloud round-trip times to detect obstacles. Edge processing also ensures operation in environments without reliable internet connectivity, preserves user privacy (sensor data stays on-device), and avoids bandwidth costs of streaming high-resolution video to the cloud. Additionally, onboard compute enables the robot to react to sensor data at the same frequency as the sensors themselves (e.g., 30-90 FPS for cameras), which is essential for safety-critical applications.
+   </details>
+
+## Summary
+
+This week, we explored the Physical AI technology landscape:
+
+- **Vision sensors** (RGB, stereo, RGB-D) provide semantic understanding and depth
+- **LIDAR** enables long-range 3D mapping and navigation
+- **IMUs** provide high-frequency orientation and acceleration data for balance and dead reckoning
+- **Proprioceptive sensors** (encoders, force/torque sensors) measure the robot's internal state
+- **Humanoid platforms** like Unitree G1, Boston Dynamics Atlas, and Tesla Optimus integrate these sensors for human-centric tasks
+- **Edge AI compute** (NVIDIA Jetson) enables real-time onboard inference
+
+## Next Steps
+
+In Week 3, we begin our deep dive into **ROS 2 Architecture and Nodes**, the middleware that connects all these sensors, algorithms, and actuators into a cohesive robotic system. You'll learn how to create ROS 2 nodes, understand the graph architecture, and build your first publisher-subscriber communication.

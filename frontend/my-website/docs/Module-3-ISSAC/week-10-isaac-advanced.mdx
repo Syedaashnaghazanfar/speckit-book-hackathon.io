@@ -1,0 +1,417 @@
+---
+sidebar_position: 10
+title: "Week 10: Advanced Isaac Features"
+description: "Integrate Nav2 for autonomous navigation, leverage cuMotion for GPU-accelerated path planning, and simulate multiple robots at scale."
+---
+
+# Week 10: Advanced Isaac Features
+
+## Introduction
+
+This week brings together everything you've learned: ROS 2 navigation (Nav2), GPU-accelerated motion planning (cuMotion), and large-scale multi-robot simulation. You'll deploy autonomous navigation stacks, optimize path planning for humanoid robots, and orchestrate warehouse simulations with 50+ robots operating simultaneously—all powered by Isaac's GPU parallelization.
+
+## Learning Objectives
+
+- **Integrate** Nav2 with Isaac Sim for autonomous mobile robot navigation
+- **Implement** cuMotion for collision-free motion planning on manipulators
+- **Configure** behavior trees for complex task execution
+- **Deploy** multi-robot systems with centralized coordination
+- **Optimize** navigation parameters for humanoid bipedal locomotion
+
+## Nav2 Integration with Isaac Sim
+
+### Nav2 Stack Overview
+
+Nav2 (Navigation2) is ROS 2's autonomous navigation framework:
+
+- **Costmap**: 2D grid representing obstacles and free space
+- **Planner**: Global path from start to goal (A*, Theta*, Sm ac Planner)
+- **Controller**: Local trajectory following (DWB, TEB, MPPI)
+- **Behavior Server**: Recovery behaviors (spin, backup)
+- **Lifecycle Management**: State machine for robust startup/shutdown
+
+### Launch Nav2 in Isaac Sim
+
+```python
+# launch/nav2_isaac.launch.py
+
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
+import os
+from ament_index_python.packages import get_package_share_directory
+
+
+def generate_launch_description():
+    nav2_bringup_dir = get_package_share_directory('nav2_bringup')
+    params_file = os.path.join(get_package_share_directory('my_robot_pkg'), 'config', 'nav2_params.yaml')
+
+    return LaunchDescription([
+        # Start Isaac Sim with warehouse environment
+        # (assumed running separately)
+
+        # Nav2 stack
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(nav2_bringup_dir, 'launch', 'navigation_launch.py')
+            ),
+            launch_arguments={
+                'params_file': params_file,
+                'use_sim_time': 'true',
+            }.items()
+        ),
+    ])
+```
+
+### Nav2 Configuration for Bipedal Robots
+
+Humanoid robots have different constraints than wheeled robots:
+
+```yaml
+# config/nav2_params.yaml
+
+controller_server:
+  ros__parameters:
+    controller_frequency: 20.0
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      min_vel_x: 0.0
+      max_vel_x: 0.5  # Slower than wheeled robots (stability)
+      min_vel_y: -0.2  # Allow lateral movement (humanoids can sidestep)
+      max_vel_y: 0.2
+      max_vel_theta: 0.3  # Slower rotation for balance
+      acc_lim_x: 0.5  # Gentler acceleration
+      acc_lim_y: 0.3
+      acc_lim_theta: 0.5
+      decel_lim_x: -0.5
+      decel_lim_y: -0.3
+      decel_lim_theta: -1.0
+
+      # Footprint (humanoid is taller, narrower)
+      footprint: "[[0.15, 0.15], [0.15, -0.15], [-0.15, -0.15], [-0.15, 0.15]]"
+
+      # Trajectory scoring
+      path_distance_bias: 32.0
+      goal_distance_bias: 24.0
+      occdist_scale: 0.01
+
+planner_server:
+  ros__parameters:
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_smac_planner/SmacPlannerHybrid"  # Hybrid A* for humanoids
+      tolerance: 0.25
+      allow_unknown: true
+      max_iterations: 1000000
+      minimum_turning_radius: 0.4  # Humanoids turn in place easier than cars
+```
+
+## cuMotion: GPU-Accelerated Motion Planning
+
+### What is cuMotion?
+
+<span className="highlight-purple">**cuMotion**</span> is NVIDIA's GPU-accelerated motion planning library:
+- Collision-free path planning for manipulators
+- 10-100x faster than traditional planners (MoveIt OMPL)
+- Optimized for complex scenes (thousands of obstacles)
+
+```mermaid
+sequenceDiagram
+    participant Dev as Development<br/>(Your PC/Cloud)
+    participant Sim as Isaac Sim<br/>(Validation)
+    participant CI as CI/CD<br/>(Testing)
+    participant Edge as Jetson Orin<br/>(Deployment)
+
+    Note over Dev: Train model on<br/>synthetic data
+    Dev->>Sim: Test in Isaac Sim
+    Sim->>Dev: Validation metrics
+
+    Note over Dev: Export to TensorRT
+    Dev->>CI: Push to repository
+    CI->>CI: Run test suite
+    CI->>Edge: Deploy TensorRT model
+
+    Note over Edge: Real-time inference<br/>(30 FPS)
+    Edge->>Edge: Execute actions
+
+    style Sim fill:#a855f7,stroke:#9333ea,stroke-width:2px,color:#fff
+    style Edge fill:#ec4899,stroke:#db2777,stroke-width:2px,color:#fff
+    style CI fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:#fff
+```
+
+**Diagram:** Model deployment workflow from development with synthetic data in Isaac Sim, through CI/CD validation, to real-time TensorRT inference on Jetson edge devices.
+
+### Using cuMotion with MoveIt 2
+
+```python
+# Install cuMotion
+sudo apt install ros-humble-curobo
+
+# In your MoveIt config:
+# config/moveit_cpp.yaml
+
+planning_pipelines:
+  - curobo
+
+curobo:
+  planning_plugin: curobo_moveit/CuRoboPlanner
+  request_adapters:
+    - default_planning_request_adapters/ResolveConstraintFrames
+    - default_planning_request_adapters/ValidateWorkspaceBounds
+  response_adapters:
+    - default_planning_response_adapters/ValidateSolution
+
+  # cuMotion parameters
+  num_seeds: 16  # Parallel trajectory optimizations
+  interpolation_dt: 0.01  # 100 Hz trajectory
+  collision_check_distance: 0.01  # 1cm safety margin
+```
+
+### Code Example: Planning with cuMotion
+
+```python
+import rclpy
+from rclpy.node import Node
+from moveit.planning import MoveItPy
+from geometry_msgs.msg import PoseStamped
+
+
+class CuMotionPlanner(Node):
+    def __init__(self):
+        super().__init__('curobo_planner')
+
+        # Initialize MoveIt
+        self.moveit = MoveItPy(node=self)
+        self.arm = self.moveit.get_planning_component("manipulator")
+
+    def plan_to_pose(self, target_pose):
+        """Plan to target pose using cuMotion"""
+
+        # Set planning pipeline to cuMotion
+        self.arm.set_planning_pipeline_id("curobo")
+
+        # Set goal
+        self.arm.set_pose_goal(target_pose)
+
+        # Plan (GPU-accelerated)
+        plan_result = self.arm.plan()
+
+        if plan_result:
+            self.get_logger().info('Planning succeeded!')
+            # Execute
+            self.arm.execute()
+        else:
+            self.get_logger().error('Planning failed')
+
+        return plan_result
+
+
+def main():
+    rclpy.init()
+    planner = CuMotionPlanner()
+
+    # Define target pose
+    target = PoseStamped()
+    target.header.frame_id = "base_link"
+    target.pose.position.x = 0.5
+    target.pose.position.y = 0.2
+    target.pose.position.z = 0.4
+    target.pose.orientation.w = 1.0
+
+    planner.plan_to_pose(target)
+
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+## Behavior Trees for Complex Tasks
+
+### What are Behavior Trees?
+
+Behavior trees (BTs) coordinate multiple actions with logic:
+
+```
+Root
+├── Sequence (all must succeed)
+│   ├── Navigate to Object
+│   ├── Grasp Object
+│   └── Navigate to Goal
+└── Fallback (try until one succeeds)
+    ├── Recovery: Spin
+    └── Recovery: Backup
+```
+
+### Example: Pick and Place BT
+
+```xml
+<!-- behavior_tree.xml -->
+
+<root main_tree_to_execute="PickAndPlaceTree">
+  <BehaviorTree ID="PickAndPlaceTree">
+    <Sequence name="PickAndPlace">
+
+      <!-- Navigate to pickup location -->
+      <Action ID="NavigateToPoint"
+              goal="{pickup_location}"
+              server_name="navigate_to_pose"/>
+
+      <!-- Align with object -->
+      <Action ID="AlignWithObject"
+              object_id="{target_object_id}"/>
+
+      <!-- Grasp -->
+      <Action ID="CloseGripper"
+              force="20.0"/>
+
+      <!-- Navigate to drop location -->
+      <Action ID="NavigateToPoint"
+              goal="{dropoff_location}"
+              server_name="navigate_to_pose"/>
+
+      <!-- Release -->
+      <Action ID="OpenGripper"/>
+
+    </Sequence>
+  </BehaviorTree>
+</root>
+```
+
+### Running Behavior Trees with Nav2
+
+```bash
+# Load behavior tree
+ros2 run nav2_bt_navigator bt_navigator --ros-args \
+  -p default_bt_xml_filename:=/path/to/behavior_tree.xml
+
+# Send goal through behavior tree
+ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
+  "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 2.0, y: 1.0, z: 0.0}}}}"
+```
+
+## Multi-Robot Simulation at Scale
+
+### Isaac Sim Multi-Robot Capabilities
+
+Isaac Sim can simulate 100+ robots in parallel using GPU acceleration:
+
+```python
+# multi_robot_warehouse.py
+
+from omni.isaac.kit import SimulationApp
+simulation_app = SimulationApp({"headless": False})
+
+from omni.isaac.core import World
+from omni.isaac.core.utils.stage import add_reference_to_stage
+import numpy as np
+
+world = World()
+world.scene.add_default_ground_plane()
+
+# Add warehouse model
+add_reference_to_stage(
+    usd_path="/Isaac/Environments/Simple_Warehouse/warehouse.usd",
+    prim_path="/World/Warehouse"
+)
+
+# Spawn 50 robots in a grid
+num_robots = 50
+grid_size = int(np.sqrt(num_robots))
+
+for i in range(num_robots):
+    row = i // grid_size
+    col = i % grid_size
+
+    add_reference_to_stage(
+        usd_path="/Isaac/Robots/Carter/carter_v2.usd",
+        prim_path=f"/World/Carter_{i}"
+    )
+
+    # Position in grid (2m spacing)
+    robot = world.scene.get_object(f"Carter_{i}")
+    robot.set_world_pose(position=[row * 2.0, col * 2.0, 0.0])
+
+world.reset()
+
+# Simulate 1000 steps
+for _ in range(1000):
+    world.step(render=True)
+
+simulation_app.close()
+```
+
+### Fleet Management with cuOpt
+
+**cuOpt** (CUDA Optimization) solves vehicle routing problems on GPU:
+
+```python
+from cuopt import routing
+
+# Define depot and delivery locations
+depot = [0.0, 0.0]
+deliveries = [[10, 5], [15, 10], [5, 15], [20, 20]]  # 4 delivery points
+
+# Define robot fleet
+num_robots = 2
+robot_capacity = 100  # kg
+
+# Solve routing problem
+solution = routing.solve_vrp(
+    depot=depot,
+    locations=deliveries,
+    num_vehicles=num_robots,
+    vehicle_capacity=robot_capacity,
+    package_weights=[20, 30, 25, 25]  # kg per delivery
+)
+
+print(f"Route for Robot 1: {solution.routes[0]}")
+print(f"Route for Robot 2: {solution.routes[1]}")
+print(f"Total distance: {solution.total_distance:.2f}m")
+```
+
+## Self-Assessment Questions
+
+1. **Why is hybrid A* better than grid-based A* for humanoid navigation?**
+   <details>
+   <summary>Answer</summary>
+   Hybrid A* considers the robot's orientation and kinematic constraints (turning radius, minimum step length) when planning, producing smoother, more feasible paths. Grid-based A* only plans in (x, y) space, ignoring orientation, which can result in paths with sharp turns that bipedal robots cannot execute. Humanoids benefit from hybrid A* because it generates paths compatible with their locomotion capabilities, reducing replanning frequency and improving execution success rate.
+   </details>
+
+2. **How does cuMotion achieve 10-100x speedup over CPU-based planners?**
+   <details>
+   <summary>Answer</summary>
+   cuMotion parallelizes trajectory optimization and collision checking across thousands of GPU cores. It evaluates 16-64 candidate trajectories simultaneously, checking collisions against complex meshes in parallel. CPU planners (OMPL) are sequential: evaluate one trajectory, check collisions serially, then try the next. For scenes with 1000+ obstacles and 7-DoF arms, this parallelism translates to massive speedups. Additionally, cuMotion uses GPU-optimized algorithms (parallel distance queries, batched forward kinematics) unavailable on CPU.
+   </details>
+
+3. **What is the advantage of using behavior trees over hardcoded if-else logic for robot tasks?**
+   <details>
+   <summary>Answer</summary>
+   Behavior trees are modular, composable, and human-readable. You can build complex behaviors from simple, reusable nodes (Navigate, Grasp, Detect). They handle failures gracefully via Fallback nodes (try alternatives automatically). Debugging is visual (see tree structure), unlike nested if-else code. Modifications don't require recompiling—edit XML and reload. Industry adoption (game AI, robotics) means extensive tooling (BehaviorTree.cpp, Groot visualizer). Hardcoded logic becomes unmaintainable as task complexity grows beyond 5-10 steps.
+   </details>
+
+4. **Why can Isaac Sim simulate 100+ robots while Gazebo struggles with 10?**
+   <details>
+   <summary>Answer</summary>
+   Isaac Sim uses GPU-accelerated PhysX 5, which parallelizes rigid body dynamics, collision detection, and constraint solving across thousands of GPU cores. Each robot's physics is computed in parallel. Gazebo uses CPU physics (ODE/Bullet) where robots are simulated sequentially. For 100 robots, Gazebo requires 100x more CPU time, dropping to 1-5 FPS. Isaac Sim maintains 60+ FPS by leveraging GPU parallelism. Additionally, Isaac Sim optimizes rendering (instancing, LOD) to handle visual complexity efficiently.
+   </details>
+
+5. **What is the sim-to-real gap for Nav2 navigation, and how do you minimize it?**
+   <details>
+   <summary>Answer</summary>
+   The gap arises from: (1) perfect sensors in sim vs noisy real LIDAR/cameras, (2) ideal physics vs slippery floors/unexpected contacts, (3) exact localization vs SLAM drift. Minimize by: (1) Adding sensor noise in simulation (Gaussian noise on LIDAR/IMU), (2) Domain randomization (vary friction, mass), (3) Testing recovery behaviors in sim (what happens when robot is pushed?), (4) Using realistic costmap inflation (account for real sensor uncertainty), (5) Fine-tuning on real hardware with conservative speed limits initially.
+   </details>
+
+## Summary
+
+- **Nav2** integrates with Isaac Sim for autonomous navigation
+- **cuMotion** accelerates motion planning 10-100x via GPU parallelization
+- **Behavior trees** coordinate complex multi-step tasks
+- **Multi-robot simulation** scales to 100+ robots with GPU physics
+- **cuOpt** optimizes fleet routing and task allocation
+
+## Next Steps
+
+Week 11 begins Module 4 (VLA), exploring **Humanoid Robot Development** with real hardware platforms (Unitree G1), whole-body control, and deploying perception stacks on Jetson Orin Nano.

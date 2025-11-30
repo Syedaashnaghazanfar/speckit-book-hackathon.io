@@ -1,0 +1,111 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.heroContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.heroText {
+  flex: 1;
+  text-align: left;
+  z-index: 1;
+}
+
+.heroImageContainer {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+  z-index: 1;
+}
+
+.pixelRobot3D {
+  max-width: 100%;
+  width: 450px;
+  border-radius: 24px;
+  transform-style: preserve-3d;
+  transform: rotateY(-12deg) rotateX(5deg);
+  box-shadow: 
+    -20px 20px 50px rgba(0,0,0,0.5),
+    0 0 30px rgba(147, 51, 234, 0.3); /* Primary purple glow */
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: float 6s ease-in-out infinite;
+  border: 2px solid rgba(147, 51, 234, 0.3);
+}
+
+.pixelRobot3D:hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(1.02);
+  box-shadow: 
+    0 10px 40px rgba(0,0,0,0.4),
+    0 0 50px rgba(147, 51, 234, 0.5);
+}
+
+@keyframes float {
+  0% { transform: rotateY(-12deg) rotateX(5deg) translateY(0px); }
+  50% { transform: rotateY(-12deg) rotateX(5deg) translateY(-20px); }
+  100% { transform: rotateY(-12deg) rotateX(5deg) translateY(0px); }
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem 1rem;
+  }
+  
+  .heroContent {
+    flex-direction: column-reverse;
+    text-align: center;
+    gap: 1.5rem;
+  }
+
+  .heroText {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .heroImageContainer {
+    margin-bottom: 2rem;
+    perspective: none;
+  }
+
+  .pixelRobot3D {
+    width: 280px;
+    transform: none;
+    animation: floatMobile 4s ease-in-out infinite;
+  }
+
+  @keyframes floatMobile {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 2rem;
+}
+
+@media screen and (max-width: 996px) {
+  .buttons {
+    justify-content: center;
+  }
+}

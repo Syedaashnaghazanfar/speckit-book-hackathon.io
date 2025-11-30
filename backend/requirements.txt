@@ -1,0 +1,42 @@
+# FastAPI and server
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+python-dotenv==1.0.1
+
+# Pydantic for data validation
+pydantic==2.6.1
+pydantic-settings==2.1.0
+email-validator==2.1.0
+
+# OpenAI for embeddings
+openai==1.12.0
+
+# Qdrant for vector database
+qdrant-client==1.7.3
+
+# Google Generative AI (Gemini)
+google-generativeai==0.3.2
+
+# Database (Bonus features)
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# Authentication (Bonus)
+bcrypt==4.1.2
+python-jose[cryptography]==3.3.0
+passlib==1.7.4
+
+# Middleware and utilities
+slowapi==0.1.9
+python-multipart==0.0.9
+
+# Testing
+pytest==8.0.1
+pytest-asyncio==0.23.5
+pytest-cov==4.1.0
+httpx==0.26.0
+
+# Code quality
+black==24.2.0
+pylint==3.0.3
+mypy==1.8.0
