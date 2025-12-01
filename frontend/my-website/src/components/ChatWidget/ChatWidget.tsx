@@ -101,7 +101,7 @@ const ChatWidget = forwardRef<ChatWidgetRef>((props, ref) => {
       // In development (localhost), use local backend
       const apiUrl = window.location.hostname === "localhost"
         ? "http://localhost:8000"
-        : "https://ashnaali22-physical-ai-backend.hf.space";
+        : "https://ashnaali22-hackhathon-backend.hf.space";
 
       const response = await fetch(`${apiUrl}/api/chat/`, {
         method: "POST",

@@ -1,5 +1,5 @@
 ---
-title: Physical AI Backend
+title: Hackhathon Backend
 emoji: >
 colorFrom: blue
 colorTo: purple
@@ -15,10 +15,10 @@ Backend API for the AI-native interactive textbook with RAG chatbot powered by G
 ## Features
 
 - > **RAG Chatbot**: Semantic search over course content using Qdrant vector database
-- >à **Gemini AI**: Powered by Google's Gemini model for intelligent responses
-- =Ú **Course Content**: Covers ROS 2, Gazebo, Isaac Sim, and VLA for humanoid robotics
+- >ï¿½ **Gemini AI**: Powered by Google's Gemini model for intelligent responses
+- =ï¿½ **Course Content**: Covers ROS 2, Gazebo, Isaac Sim, and VLA for humanoid robotics
 - = **CORS Enabled**: Configured for Vercel frontend integration
-- ¡ **FastAPI**: High-performance async API
+- ï¿½ **FastAPI**: High-performance async API
 
 ## Environment Variables
 
