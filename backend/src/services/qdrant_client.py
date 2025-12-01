@@ -121,21 +121,13 @@ class QdrantService:
             List of search results with scores and metadata
         """
         try:
-            # Use query_points for newer Qdrant client API
-            from qdrant_client.models import models
-
-            results = self.client.query_points(
+            # Use search method for Qdrant client v1.7.3
+            results = self.client.search(
                 collection_name=self.collection_name,
-                query=query_vector,
+                query_vector=query_vector,
                 limit=limit,
                 score_threshold=score_threshold
             )
-
-            # Handle both QueryResponse and list of ScoredPoint
-            if hasattr(results, 'points'):
-                points = results.points
-            else:
-                points = results
 
             return [
                 {
@@ -143,7 +135,7 @@ class QdrantService:
                     "score": result.score,
                     "payload": result.payload
                 }
-                for result in points
+                for result in results
             ]
 
         except Exception as e:
