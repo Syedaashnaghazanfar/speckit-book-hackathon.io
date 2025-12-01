@@ -2,8 +2,8 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 20px;
-  padding: 8px 16px;
+  border-radius: 24px;
+  padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -11,15 +11,42 @@
   z-index: 10000;
   transition: all 0.2s ease;
   white-space: nowrap;
+  /* Prevent text selection on the button itself */
+  user-select: none;
+  -webkit-user-select: none;
+  /* Better touch target size for mobile */
+  min-height: 44px;
+  min-width: 120px;
+  /* Improve tap responsiveness */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
-.floatingButton:hover {
-  transform: translateX(-50%) translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+/* Desktop hover effect */
+@media (hover: hover) and (pointer: fine) {
+  .floatingButton:hover {
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  }
 }
 
+/* Active/tap effect for both desktop and mobile */
 .floatingButton:active {
-  transform: translateX(-50%) translateY(0px);
+  transform: translateX(-50%) scale(0.98);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  .floatingButton {
+    font-size: 15px;
+    padding: 12px 20px;
+    border-radius: 26px;
+    /* Larger touch target on mobile */
+    min-height: 48px;
+    min-width: 140px;
+    /* Better shadow on mobile for visibility */
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+  }
 }

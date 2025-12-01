@@ -19,27 +19,55 @@ const TextSelectionHandler: React.FC<TextSelectionHandlerProps> = ({
   const [buttonPosition, setButtonPosition] = useState<{ x: number; y: number } | null>(null);
 
   const handleTextSelection = useCallback(() => {
-    const selection = window.getSelection();
-    const text = selection?.toString().trim();
+    // Small delay to ensure selection is complete (especially on mobile)
+    setTimeout(() => {
+      const selection = window.getSelection();
+      const text = selection?.toString().trim();
 
-    if (text && text.length > 10) {
-      // Only show button for selections > 10 characters
-      setSelectedText(text);
+      if (text && text.length > 10) {
+        // Only show button for selections > 10 characters
+        setSelectedText(text);
 
-      // Get selection position
-      const range = selection?.getRangeAt(0);
-      const rect = range?.getBoundingClientRect();
+        // Get selection position
+        const range = selection?.getRangeAt(0);
+        const rect = range?.getBoundingClientRect();
 
-      if (rect) {
-        setButtonPosition({
-          x: rect.left + rect.width / 2,
-          y: rect.top - 40, // Position above selection
-        });
+        if (rect) {
+          // Calculate position with viewport awareness for mobile
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+
+          let x = rect.left + rect.width / 2;
+          let y = rect.top - 50; // Position above selection
+
+          // Ensure button stays within viewport bounds
+          const buttonWidth = 150; // Approximate button width
+          const buttonHeight = 40; // Approximate button height
+
+          // Adjust horizontal position if too close to edge
+          if (x - buttonWidth / 2 < 10) {
+            x = buttonWidth / 2 + 10;
+          } else if (x + buttonWidth / 2 > viewportWidth - 10) {
+            x = viewportWidth - buttonWidth / 2 - 10;
+          }
+
+          // If not enough space above, position below selection
+          if (y < 10) {
+            y = rect.bottom + 10;
+          }
+
+          // Ensure button doesn't go below viewport
+          if (y + buttonHeight > viewportHeight - 10) {
+            y = rect.top - 50;
+          }
+
+          setButtonPosition({ x, y });
+        }
+      } else {
+        setSelectedText('');
+        setButtonPosition(null);
       }
-    } else {
-      setSelectedText('');
-      setButtonPosition(null);
-    }
+    }, 10);
   }, []);
 
   const handleAskAboutSelection = () => {
@@ -61,12 +89,23 @@ const TextSelectionHandler: React.FC<TextSelectionHandlerProps> = ({
   }, []);
 
   useEffect(() => {
+    // Mouse events for desktop
     document.addEventListener('mouseup', handleTextSelection);
     document.addEventListener('click', handleClickOutside);
+
+    // Touch events for mobile
+    document.addEventListener('touchend', handleTextSelection);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    // Handle selection change event (works on both mobile and desktop)
+    document.addEventListener('selectionchange', handleTextSelection);
 
     return () => {
       document.removeEventListener('mouseup', handleTextSelection);
       document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('touchend', handleTextSelection);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('selectionchange', handleTextSelection);
     };
   }, [handleTextSelection, handleClickOutside]);
 
