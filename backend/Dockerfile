@@ -13,13 +13,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the current directory contents into the container at /app
 COPY . .
 
-# Expose port 8000 for the application
-EXPOSE 8000
+# Expose port 7860 for Hugging Face Spaces (use 8000 for local development)
+EXPOSE 7860
 
 # Define environment variable
 ENV MODULE_NAME="src.main"
 ENV VARIABLE_NAME="app"
-ENV PORT=8000
+ENV PORT=7860
 
 # Run uvicorn when the container launches
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Hugging Face Spaces uses port 7860 by default
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "7860"]

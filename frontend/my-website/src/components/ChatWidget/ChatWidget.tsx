@@ -96,7 +96,13 @@ const ChatWidget = forwardRef<ChatWidgetRef>((props, ref) => {
     setError(null);
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:8000";
+      // Detect environment and use appropriate API URL
+      // In production (deployed), use Hugging Face Space URL
+      // In development (localhost), use local backend
+      const apiUrl = window.location.hostname === "localhost"
+        ? "http://localhost:8000"
+        : "https://ashnaali22-physical-ai-backend.hf.space";
+
       const response = await fetch(`${apiUrl}/api/chat/`, {
         method: "POST",
         headers: {

@@ -10,6 +10,7 @@ email-validator==2.1.0
 
 # OpenAI for embeddings
 openai==1.12.0
+fastembed==0.7.3
 
 # Qdrant for vector database
 qdrant-client==1.7.3
