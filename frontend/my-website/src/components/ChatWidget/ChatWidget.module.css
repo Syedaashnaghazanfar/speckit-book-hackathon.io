@@ -171,28 +171,38 @@
 
 /* Sources */
 .sources {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(147, 51, 234, 0.2);
+  margin-top: 16px; /* Increased margin for separation */
+  padding: 12px; /* Padded background */
+  background: var(--ifm-background-surface-color); /* Use a distinct background */
+  border-radius: 8px; /* Rounded corners */
+  border: 1px solid var(--neon-purple); /* Subtle border matching theme */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* Add some depth */
 }
 
 .sourcesTitle {
-  font-size: 12px;
-  font-weight: 600;
-  color: #A855F7;
-  margin-bottom: 8px;
+  font-size: 14px; /* Slightly larger */
+  font-weight: 700; /* Bolder */
+  color: var(--neon-cyan); /* Use neon cyan for sources title */
+  margin-bottom: 10px; /* More space below title */
+  border-bottom: 1px dashed rgba(147, 51, 234, 0.3); /* Dashed separator */
+  padding-bottom: 8px;
 }
 
 .source {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
-  padding: 4px 8px;
-  background: rgba(147, 51, 234, 0.1);
-  border-radius: 6px;
-  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.8); /* Slightly brighter text */
+  padding: 6px 10px; /* More padding */
+  background: rgba(147, 51, 234, 0.08); /* Lighter background for individual source */
+  border-radius: 4px;
+  margin-bottom: 6px; /* More space between sources */
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: all 0.2s ease;
+}
+
+.source:hover {
+  background: rgba(147, 51, 234, 0.15); /* Slightly darker on hover */
 }
 
 .sourceScore {
@@ -328,6 +338,18 @@
   border-top: 1px solid rgba(255, 0, 110, 0.3);
   color: #FF006E;
   font-size: 12px;
+}
+
+/* Inline Source Citation */
+.inline-source-citation {
+  background-color: rgba(168, 85, 247, 0.15); /* Light neon purple */
+  color: var(--neon-purple); /* Text color */
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8em; /* Slightly smaller than main text */
+  white-space: nowrap; /* Prevent breaking across lines */
+  margin: 0 4px; /* Some horizontal spacing */
+  display: inline-block; /* Ensures padding/margin work correctly */
 }
 
 /* Mobile Responsive */

@@ -9,15 +9,17 @@ Handles:
 - Error handling
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import logging
 
-from ..services.qdrant_client import qdrant_service
+from ..services.vector_db import qdrant_service
 from ..services.embeddings import embedding_service
 from ..services.query_processor import query_processor
 from ..services.generation import generation_service
+from .deps import get_current_user
+from ..models.user import UserResponse
 
 logger = logging.getLogger(__name__)
 

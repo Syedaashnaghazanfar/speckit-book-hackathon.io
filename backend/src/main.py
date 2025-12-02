@@ -18,6 +18,8 @@ from .middleware.error_handler import setup_error_handlers
 from .api.health import router as health_router
 from .api.chat import router as chat_router
 from .api.translate import router as translate_router
+from .api.auth import router as auth_router
+from .services.db import db
 
 # Application metadata
 app = FastAPI(
@@ -33,8 +35,17 @@ setup_cors(app)
 # setup_rate_limiting(app)  # Temporarily disabled - will fix later
 setup_error_handlers(app)
 
+@app.on_event("startup")
+async def startup_event():
+    await db.connect()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await db.disconnect()
+
 # Include routers
 app.include_router(health_router)
+app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(translate_router)
 

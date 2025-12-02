@@ -1,0 +1,138 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(5px);
+}
+
+.modalContent {
+  background-color: var(--ifm-background-color);
+  border: 2px solid var(--neon-purple);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+  position: relative;
+}
+
+.closeButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--ifm-font-color-base);
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.closeButton:hover {
+  opacity: 1;
+  color: var(--neon-pink);
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+}
+
+.input {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--ifm-color-primary);
+  background-color: rgba(147, 51, 234, 0.05);
+  color: var(--ifm-font-color-base);
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 8px rgba(236, 72, 153, 0.3);
+}
+
+.submitButton {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, var(--ifm-color-primary), var(--ifm-color-primary-dark));
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.submitButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
+}
+
+.submitButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.toggleText {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.toggleLink {
+  color: var(--neon-cyan);
+  cursor: pointer;
+  text-decoration: underline;
+  margin-left: 0.5rem;
+}
+
+.toggleLink:hover {
+  color: var(--neon-pink);
+}
+
+.error {
+  color: #ef4444;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #ef4444;
+  border-radius: 4px;
+  background-color: rgba(239, 68, 68, 0.1);
+}

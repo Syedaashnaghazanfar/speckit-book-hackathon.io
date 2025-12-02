@@ -24,7 +24,7 @@ backend_root = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_root))
 
 from src.services.embeddings import embedding_service
-from src.services.qdrant_client import qdrant_service
+from src.services.vector_db import qdrant_service
 from semantic_chunker import SemanticMDXChunker, Chunk
 
 

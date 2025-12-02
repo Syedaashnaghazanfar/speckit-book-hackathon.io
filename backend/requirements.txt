@@ -1,43 +1,23 @@
-# FastAPI and server
-fastapi==0.110.0
-uvicorn[standard]==0.27.1
-python-dotenv==1.0.1
+# Database
+asyncpg>=0.31.0
+psycopg2-binary>=2.9.11
+sqlalchemy>=2.0.44
 
-# Pydantic for data validation
-pydantic==2.6.1
-pydantic-settings==2.1.0
-email-validator==2.1.0
+# Authentication & Security
+bcrypt>=5.0.0
+python-jose[cryptography]>=3.5.0
+passlib[bcrypt]>=1.7.4
+email-validator>=2.3.0
+# better-auth>=0.0.1b9  # Kept for reference, though we built custom auth
 
-# OpenAI for embeddings
-openai==1.12.0
-fastembed==0.7.3
+# API Framework
+fastapi>=0.122.0
+uvicorn[standard]>=0.27.1
+pydantic[email]>=2.12.5
+pydantic-settings>=2.12.0
 
-# Qdrant for vector database
-qdrant-client==1.7.3
-
-# Google Generative AI (Gemini)
-google-generativeai==0.3.2
-
-# Database (Bonus features)
-asyncpg==0.29.0
-psycopg2-binary==2.9.9
-
-# Authentication (Bonus)
-bcrypt==4.1.2
-python-jose[cryptography]==3.3.0
-passlib==1.7.4
-
-# Middleware and utilities
-slowapi==0.1.9
-python-multipart==0.0.9
-
-# Testing
-pytest==8.0.1
-pytest-asyncio==0.23.5
-pytest-cov==4.1.0
-httpx==0.26.0
-
-# Code quality
-black==24.2.0
-pylint==3.0.3
-mypy==1.8.0
+# AI & Vector Search
+google-genai>=1.52.0
+google-generativeai>=0.8.5
+openai-agents>=0.6.1
+qdrant-client>=1.10.0

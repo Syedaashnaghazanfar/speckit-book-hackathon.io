@@ -83,7 +83,7 @@ const config: Config = {
           label: "Course Modules",
         },
         {
-          href: "https://github.com/your-org/physical-ai-textbook",
+          href: "https://github.com/Syedaashnaghazanfar/speckit-book-hackathon.io",
           label: "GitHub",
           position: "right",
         },
@@ -132,7 +132,7 @@ const config: Config = {
           items: [
             {
               label: "GitHub Repository",
-              href: "https://github.com/your-org/physical-ai-textbook",
+              href: "https://github.com/Syedaashnaghazanfar/speckit-book-hackathon.io",
             },
             {
               label: "NVIDIA Isaac",

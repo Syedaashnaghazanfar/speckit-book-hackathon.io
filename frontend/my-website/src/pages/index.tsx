@@ -5,11 +5,24 @@ import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
 import HomepageFeatures from "@site/src/components/HomepageFeatures";
 import Heading from "@theme/Heading";
+import { useAuth } from "../context/AuthContext";
+import { useHistory } from "@docusaurus/router";
 
 import styles from "./index.module.css";
 
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext();
+  const { user, openAuthModal } = useAuth();
+  const history = useHistory();
+
+  const handleStartReading = () => {
+    if (user) {
+      history.push("/docs/intro");
+    } else {
+      openAuthModal();
+    }
+  };
+
   return (
     <header className={clsx("hero", styles.heroBanner)}>
       <div className="container">
@@ -20,12 +33,13 @@ function HomepageHeader() {
             </Heading>
             <p className="hero__subtitle">{siteConfig.tagline}</p>
             <div className={styles.buttons}>
-              <Link
+              <button
                 className="button button--secondary button--lg"
-                to="/docs/intro"
+                onClick={handleStartReading}
+                style={{ cursor: "pointer" }}
               >
-                Start Reading
-              </Link>
+                {user ? "Start Reading" : "Sign in to Read"}
+              </button>
             </div>
           </div>
           <div className={styles.heroImageContainer}>

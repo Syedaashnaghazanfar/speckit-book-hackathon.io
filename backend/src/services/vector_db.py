@@ -39,6 +39,8 @@ class QdrantService:
             vector_size: Embedding dimension size (default: 384 for bge-small-en-v1.5)
         """
         try:
+            # Wrap sync calls in a way that doesn't block event loop if possible,
+            # but for now, simple sync call is safer to fix the AttributeError
             collections = self.client.get_collections().collections
             collection_exists = any(
                 col.name == self.collection_name for col in collections
@@ -121,13 +123,15 @@ class QdrantService:
             List of search results with scores and metadata
         """
         try:
-            # Use search method for Qdrant client v1.7.3
-            results = self.client.search(
+            # Use query_points method (v1.10+ compatible)
+            response = self.client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                query=query_vector,
                 limit=limit,
                 score_threshold=score_threshold
             )
+            
+            results = response.points
 
             return [
                 {

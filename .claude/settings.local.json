@@ -42,7 +42,14 @@
       "Bash(D:/code/Q4/hackhathon/hackhathon-book/.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks)",
       "Bash(D:/code/Q4/hackhathon/hackhathon-book/.specify/scripts/bash/check-prerequisites.sh --json)",
       "Bash(D:/code/Q4/hackhathon/hackhathon-book/.specify/scripts/bash/create-phr.sh:*)",
-      "Bash(.venvScriptspython.exe -c \"import google.generativeai as genai; from google.generativeai.types import HarmCategory, HarmBlockThreshold; print(''Imports successful!'')\")"
+      "Bash(.venvScriptspython.exe -c \"import google.generativeai as genai; from google.generativeai.types import HarmCategory, HarmBlockThreshold; print(''Imports successful!'')\")",
+      "Bash(else echo \"No .venv found\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nConfigure deployment for Hugging Face and Vercel\n\n- Update Dockerfile to use port 7860 for Hugging Face Spaces\n- Configure ChatWidget to use production API URL (ashnaali22-physical-ai-backend.hf.space)\n- Add fastembed dependency to requirements.txt\n- Support both local development (localhost:8000) and production environments\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git subtree push:*)"
     ],
     "deny": [],
     "ask": []

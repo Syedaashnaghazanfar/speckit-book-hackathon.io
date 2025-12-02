@@ -1,0 +1,62 @@
+.progressBarContainer {
+  position: fixed;
+  top: 60px; /* Below navbar */
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #9333ea, #ff006e);
+  box-shadow: 0 0 10px #9333ea;
+  width: 0%;
+  transition: width 0.1s ease-out;
+}
+
+.listenButton {
+  position: fixed;
+  bottom: 24px;
+  left: 24px; /* Opposite side of chat widget */
+  z-index: 99;
+  background: rgba(26, 15, 46, 0.8);
+  border: 1px solid #9333ea;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-weight: bold;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.listenButton:hover {
+  background: #9333ea;
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.6);
+}
+
+.speaking {
+  background: #ff006e;
+  border-color: #ff006e;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 0, 110, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 0, 110, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 0, 110, 0); }
+}
+
+@media (max-width: 768px) {
+  .listenButton {
+    bottom: 90px; /* Move up so it doesn't overlap mobile chat/menu */
+    left: 16px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}

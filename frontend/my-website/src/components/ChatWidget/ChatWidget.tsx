@@ -166,12 +166,27 @@ const ChatWidget = forwardRef<ChatWidgetRef>((props, ref) => {
       setIsOpen(true);
     }
 
+    setError(null); // Clear previous errors
+
+    const MIN_SELECTION_LENGTH = 3;
+    const MAX_SELECTION_LENGTH = 500;
+
+    if (selectedText.length < MIN_SELECTION_LENGTH) {
+      setError(`Please select at least ${MIN_SELECTION_LENGTH} characters.`);
+      return;
+    }
+
+    if (selectedText.length > MAX_SELECTION_LENGTH) {
+      setError(`Selected text is too long (max ${MAX_SELECTION_LENGTH} characters).`);
+      return;
+    }
+
     // Create a scoped query message
     const scopedQuery = `Based on the following selected text, please answer my question:\n\n"${selectedText}"\n\nQuestion: What does this text mean? Explain it to me.`;
 
     setInputValue(scopedQuery);
 
-    // Automatically send the query after a short delay to ensure chat is open
+    // Automatically send the query after a short delay to ensure chat is open and state is updated
     setTimeout(() => {
       handleSendMessage();
     }, 300);
@@ -180,6 +195,24 @@ const ChatWidget = forwardRef<ChatWidgetRef>((props, ref) => {
   useImperativeHandle(ref, () => ({
     askAboutSelection,
   }));
+
+  // Helper function to render basic Markdown
+  const renderMarkdown = (text: string) => {
+    // Bold: **text** or __text__
+    let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    // Italics: *text* or _text_
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+    // Blockquote: > text
+    html = html.replace(/^>\s*(.*)$/gm, '<blockquote>$1</blockquote>');
+    // Remove inline source citations: [Source: ...]
+    html = html.replace(/\[Source:\s*([^\]]+)\]/g, '');
+    // Newlines to <br> for simple paragraph breaks (optional, but makes blocks look cleaner)
+    html = html.replace(/\n/g, '<br />');
+
+    return html;
+  };
 
   return (
     <div className={styles.chatWidget}>
@@ -215,7 +248,7 @@ const ChatWidget = forwardRef<ChatWidgetRef>((props, ref) => {
                 }`}
               >
                 <div className={styles.messageContent}>
-                  <div className={styles.messageText}>{message.content}</div>
+                  <div className={styles.messageText} dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}></div>
 
                   {/* Sources */}
                   {message.sources && message.sources.length > 0 && (

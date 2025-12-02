@@ -1,0 +1,29 @@
+.userContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.greeting {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.username {
+  font-weight: bold;
+  color: var(--ifm-color-primary);
+}
+
+@media (max-width: 996px) {
+  .userContainer {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    margin-top: 0.5rem;
+    width: 100%;
+    justify-content: space-between;
+  }
+}
