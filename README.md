@@ -17,23 +17,6 @@
 
 ---
 
-## 📖 Table of Contents
-
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Features in Detail](#features-in-detail)
-- [Course Content](#course-content)
-- [Installation & Setup](#installation--setup)
-- [Deployment](#deployment)
-- [API Documentation](#api-documentation)
-- [Future Enhancements](#future-enhancements)
-- [Contributing](#contributing)
-- [License](#license)
-
----
-
 ## 🎯 Overview
 
 This project is a **modern, AI-powered interactive textbook** designed to teach Physical AI and Humanoid Robotics. It combines traditional educational content with cutting-edge AI technologies to create an immersive, adaptive learning experience.
