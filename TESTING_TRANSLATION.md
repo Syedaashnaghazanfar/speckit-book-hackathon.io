@@ -1,4 +1,4 @@
-# Testing the Translation System
+# Testing the Translation System (removed for now - will add in future)
 
 ## Quick Start Testing Guide
 
